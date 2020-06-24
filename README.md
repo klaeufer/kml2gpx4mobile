@@ -1,6 +1,6 @@
 # Purpose
 
-Command-line converter from kml to gpx with a focus on placemarks for import into OsmAnd and similar apps. 
+Command-line converter from kml to gpx with a focus on placemarks for import into OsmAnd and similar mobile apps. 
 Supports kml `ExtendedData` by folding them into the GPX desc element.
 Aims to overcome the following limitations of existing alternatives:
 
