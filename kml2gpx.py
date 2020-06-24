@@ -57,6 +57,20 @@ def find_text_for_field(sdata, name):
 def find_plain_text_for_field(sdata, name):
     return bs(find_text_for_field(sdata, name), features='lxml').get_text()
 
+# TODO make configurable - this is from the USFS dataset
+
+west_bounding_coordinate = -177.596546
+east_bounding_coordinate = -8.244094
+north_bounding_coordinate = 61.082222
+south_bounding_coordinate = 11.358620
+
+def validate_location(lat, lon, id):
+    try:
+        assert south_bounding_coordinate <= float(lat) <= north_bounding_coordinate
+        assert west_bounding_coordinate <= float(lon) <= east_bounding_coordinate
+    except AssertionError:
+        logging.warning(f'placemark {id}: lat/lon {lat}, {lon} outside extent')
+
 gpx = gpxpy.gpx.GPX()
 count = 0
 for e in tqdm(placemarks):
@@ -73,6 +87,7 @@ for e in tqdm(placemarks):
             # lat/lon probably in wrong order
             lat, lon = lon, lat
             logging.warning(f'placemark {id}: switched lat/lon {lat}, {lon}')
+        validate_location(lat, lon, id)
         wpt = gpxpy.gpx.GPXWaypoint(latitude = lat, longitude = lon)
         wpt.name = find_text_for_field(sdata, 'RECAREANAM')
         desc = find_plain_text_for_field(sdata, 'RECAREADES')
