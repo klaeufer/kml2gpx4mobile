@@ -26,28 +26,20 @@ logging.info('ogckml22 validation: %r', Schema('ogckml22.xsd').validate(root))
 # https://developer.mozilla.org/en-US/docs/Web/XPath/Functions
 # https://devhints.io/xpath
 
-placemarks = root.xpath(
-    '//k:Placemark',
-    namespaces={'k': 'http://www.opengis.net/kml/2.2'})
-logging.info(f'found {len(placemarks)} placemarks')
+ns = '{http://www.opengis.net/kml/2.2}'
 
-# TODO read these fields from the kml file itself!
+# discover ExtendedData fields
 # TODO make the mapping to their display names configurable
 
-fields = {
-'OPENSTATUS': 'Open/closed:  ',
-'OPEN_SEASO': 'From:         ',
-'OPEN_SEA_1': 'To:           ',
-'OPERATIONA': 'Operational:  ',
-'FEEDESCRIP': 'Fees:         ',
-'RESERVATIO': 'Reservations: ',
-'RESTRICTIO': 'Restrictions: ',
-'MARKERACTI': 'Activities:   ',
-'SPOTLIGHTD': 'Spotlighted:  ',
-'ATTRACTION': 'Attraction:   ',
-'ACCESSIBIL': 'Access:       ',
-'FORESTNAME': 'Forest:       '
-}
+fieldElements = root.Document.Schema.findall(ns + 'SimpleField')
+fields = list(map(lambda f: f.get('name'), fieldElements))
+for field in fields:
+    logging.info(f'discovered ExtendedData field {field}')
+
+# retrieve placemarks
+    
+placemarks = root.Document.Folder.findall(ns + 'Placemark')
+logging.info(f'found {len(placemarks)} placemarks')
 
 # write gpx
 
@@ -75,32 +67,32 @@ gpx = gpxpy.gpx.GPX()
 count = 0
 for e in tqdm(placemarks):
     try:
-        sdata = e.ExtendedData.SchemaData
-        id = find_text_for_field(sdata, 'RECAREAID')
-        try:
-            lon, lat = e.Point.coordinates.text.split(',')
-        except:
-            logging.info(f'placemark {id}: no Point found, using LON/LAT')
-            lon = find_text_for_field(sdata, 'LONGITUDE')
-            lat = find_text_for_field(sdata, 'LATITUDE')
-        if float(lon) > 0:
-            # lat/lon probably in wrong order
-            lat, lon = lon, lat
-            logging.warning(f'placemark {id}: switched lat/lon {lat}, {lon}')
-        validate_location(lat, lon, id)
-        wpt = gpxpy.gpx.GPXWaypoint(latitude = lat, longitude = lon)
-        wpt.name = find_text_for_field(sdata, 'RECAREANAM')
-        desc = find_plain_text_for_field(sdata, 'RECAREADES')
-        desc += '\n'
-        for field in fields:
-            fdata = find_plain_text_for_field(sdata, field)
-            if len(fdata) > 0:
-                desc += '\n'
-                desc += fields[field]
-                desc += fdata
-        wpt.description = desc
-        gpx.waypoints.append(wpt)
+        name = e.name.text
+        logging.info(f'found placemark {name}')
     except:
-        logging.error(f'placemark {id}: unrecoverable problem in input')
+        logging.error('no placemark name field found - please configure one %r', e)
+        name = 'UNKNOWN'
+    try:
+        lon, lat = e.Point.coordinates.text.split(',')
+    except:
+        logging.error('no Point subelement found - please configure lat/lon fields')
+        sys.exit(2)
+    if float(lon) > 0:
+        # lat/lon probably in wrong order
+        lat, lon = lon, lat
+        logging.warning(f'placemark {id}: switched lat/lon {lat}, {lon}')
+    validate_location(lat, lon, id)
+    wpt = gpxpy.gpx.GPXWaypoint(latitude = lat, longitude = lon)
+    wpt.name = name
+    desc = ''
+    for field in fields:
+        fdata = find_plain_text_for_field(e.ExtendedData.SchemaData, field)
+        if len(fdata) > 0:
+            desc += field
+            desc += ': '
+            desc += fdata
+            desc += '\n'
+    wpt.description = desc
+    gpx.waypoints.append(wpt)
 
 print(gpx.to_xml())
