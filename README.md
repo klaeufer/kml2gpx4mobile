@@ -13,12 +13,12 @@ The screenshot shows some of the info carried over from kml `ExtendedData`.
 
 # Dependencies
 
-- ogr2ogr (for converting Shapefiles to kml)
 - pykml
 - gpxpy
 - lxml
 - BeautifulSoup
 - tqdm
+- ogr2ogr (optional, for converting Shapefiles to kml)
 
 # Usage
 
