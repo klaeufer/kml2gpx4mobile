@@ -9,7 +9,6 @@ from pykml.helpers import set_max_decimal_places
 
 import gpxpy
 import gpxpy.gpx
-from lxml import etree
 from bs4 import BeautifulSoup as bs
 
 from tqdm import tqdm
