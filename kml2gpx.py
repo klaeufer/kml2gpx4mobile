@@ -32,9 +32,14 @@ ns = '{http://www.opengis.net/kml/2.2}'
 # TODO make the mapping to their display names configurable
 
 fieldElements = root.Document.Schema.findall(ns + 'SimpleField')
-fields = list(map(lambda f: f.get('name'), fieldElements))
-for field in fields:
+fields_discovered = list(map(lambda f: f.get('name'), fieldElements))
+for field in fields_discovered:
     logging.info(f'discovered ExtendedData field {field}')
+
+
+fields_of_interest = {'Type', 'Detail', 'Num_Sites', 'BoatLaunch', 'COUNTY', 'TOWN', 'Surface', 'Condition'}
+fields = [f for f in fields_discovered if f in fields_of_interest]
+
 
 # retrieve placemarks
     
