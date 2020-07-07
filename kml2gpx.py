@@ -71,6 +71,23 @@ def validate_location(lat, lon, id):
     except AssertionError:
         logging.warning(f'placemark {id}: lat/lon {lat}, {lon} outside extent')
 
+# TODO filter by extent - make configurable
+
+# northeast
+#west_filter = -97.5
+#east_filter = -8.2
+#north_filter = 49.5
+#south_filter = 36.5
+
+west_filter = -178
+east_filter = -8
+north_filter = 62
+south_filter = 10
+
+def is_location_within_filter_extent(lat, lon):
+    return south_filter <= float(lat) <= north_filter and west_filter <= float(lon) <= east_filter
+
+        
 gpx = gpxpy.gpx.GPX()
 count = 0
 for e in tqdm(placemarks):
@@ -88,6 +105,9 @@ for e in tqdm(placemarks):
             lat, lon = lon, lat
             logging.warning(f'placemark {id}: switched lat/lon {lat}, {lon}')
         validate_location(lat, lon, id)
+        if not is_location_within_filter_extent(lat, lon):
+            logging.info(f'placemark {id}: outside filter extent, skipping')
+            continue
         wpt = gpxpy.gpx.GPXWaypoint(latitude = lat, longitude = lon)
         wpt.name = find_text_for_field(sdata, 'RECAREANAM')
         desc = find_plain_text_for_field(sdata, 'RECAREADES')
