@@ -34,22 +34,32 @@ logging.info(f'found {len(placemarks)} placemarks')
 # TODO read these fields from the kml file itself!
 # TODO make the mapping to their display names configurable
 
-# fields in KML file downloaded from FS
-fields = {
-  'RECAREANAM': 'Name:         ',
-  'OPENSTATUS': 'Open/closed:  ',
-  'OPERATIONA': 'Operational:  ',
-  'FEEDESCRIP': 'Fees:         ',
-  'RESERVATIO': 'Reservations: ',
-  'RESTRICTIO': 'Restrictions: ',
-  'MARKERACTI': 'Activities:   ',
-  'SPOTLIGHTD': 'Spotlighted:  ',
-  'ATTRACTION': 'Attraction:   ',
-  'FORESTNAME': 'Forest:       '
-}
-# 'ACCESSIBIL': 'Accessibility:',
-# 'RECAREAURL': 'Link:         '
-
+    #   <SimpleField name="FET_TYPE" type="int"/>
+    #   <SimpleField name="FET_SUBTYPE" type="string"/>
+    #   <SimpleField name="FET_NAME" type="string"/>
+    #   <SimpleField name="ADM_UNIT_CD" type="string"/>
+    #   <SimpleField name="ADMIN_ST" type="string"/>
+    #   <SimpleField name="QC_REVIEWER" type="string"/>
+    #   <SimpleField name="QC_DATE" type="string"/>
+    #   <SimpleField name="QC_DELETE_FEATURE" type="string"/>
+    #   <SimpleField name="QC_COMMENTS" type="string"/>
+    #   <SimpleField name="DATA_SOURCE" type="string"/>
+    #   <SimpleField name="ORIG_STATE_FET_TYPE" type="string"/>
+    #   <SimpleField name="WEB_LINK" type="string"/>
+    #   <SimpleField name="PHOTO_TEXT" type="string"/>
+    #   <SimpleField name="created_user" type="string"/>
+    #   <SimpleField name="created_date" type="string"/>
+    #   <SimpleField name="last_edited_user" type="string"/>
+    #   <SimpleField name="last_edited_date" type="string"/>
+    #   <SimpleField name="UNIT_NAME" type="string"/>
+    #   <SimpleField name="SOURCE" type="string"/>
+    #   <SimpleField name="WEB_DISPLAY" type="string"/>
+    #   <SimpleField name="PHOTO_LINK" type="string"/>
+    #   <SimpleField name="PHOTO_THUMB" type="string"/>
+    #   <SimpleField name="GlobalID" type="string"/>
+    #   <SimpleField name="Original_GlobalID" type="string"/>
+    #   <SimpleField name="LAT" type="float"/>
+    #   <SimpleField name="LONG" type="float"/>
 
 
 # fields in KML file exported from QGIS
@@ -99,19 +109,18 @@ south_filter = 10
 def is_location_within_filter_extent(lat, lon):
     return south_filter <= float(lat) <= north_filter and west_filter <= float(lon) <= east_filter
 
-        
 gpx = gpxpy.gpx.GPX()
 count = 0
 for e in tqdm(placemarks):
     try:
         sdata = e.ExtendedData.SchemaData
-        id = find_text_for_field(sdata, 'RECAREAID')
+        id = find_text_for_field(sdata, 'GlobalID')
         try:
             lon, lat = e.Point.coordinates.text.split(',')
         except:
             logging.info(f'placemark {id}: no Point found, using LON/LAT')
-            lon = find_text_for_field(sdata, 'LONGITUDE')
-            lat = find_text_for_field(sdata, 'LATITUDE')
+            lon = find_text_for_field(sdata, 'LON')
+            lat = find_text_for_field(sdata, 'LAT')
         if float(lon) > 0:
             # lat/lon probably in wrong order
             lat, lon = lon, lat
@@ -121,23 +130,17 @@ for e in tqdm(placemarks):
             logging.info(f'placemark {id}: outside filter extent, skipping')
             continue
         wpt = gpxpy.gpx.GPXWaypoint(latitude = lat, longitude = lon)
-        wpt.name = find_text_for_field(sdata, 'RECAREANAM')
-
-        desc = ""
-        for field in fields:
-            fdata = find_plain_text_for_field(sdata, field)
-            if len(fdata) > 0:
-                desc += fields[field]
-                desc += fdata
-                desc += '\n'
-        desc += '\n'
-        desc += find_plain_text_for_field(sdata, 'RECAREADES')
-        desc += '\n\nLink: '
-        desc += find_text_for_field(sdata, 'RECAREAURL')
-
-        wpt.description = desc
+        wpt.name = find_plain_text_for_field(sdata, 'FET_NAME')
+        try:
+            logging.info(e.description)
+            wpt.description = bs(e.description).text
+        except:
+            #logging.warning(f'placemark {id} has no description')
+            pass
         gpx.waypoints.append(wpt)
     except:
         logging.error(f'placemark {id}: unrecoverable problem in input')
+
+#print(len(gpx.waypoints))
 
 print(gpx.to_xml())
