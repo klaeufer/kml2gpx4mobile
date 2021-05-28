@@ -34,19 +34,27 @@ logging.info(f'found {len(placemarks)} placemarks')
 # TODO read these fields from the kml file itself!
 # TODO make the mapping to their display names configurable
 
+# fields in KML file downloaded from FS
+# fields = {
+# 'OPENSTATUS': 'Open/closed:  ',
+# 'OPERATIONA': 'Operational:  ',
+# 'FEEDESCRIP': 'Fees:         ',
+# 'RESERVATIO': 'Reservations: ',
+# 'RESTRICTIO': 'Restrictions: ',
+# 'MARKERACTI': 'Activities:   ',
+# 'SPOTLIGHTD': 'Spotlighted:  ',
+# 'ATTRACTION': 'Attraction:   ',
+# 'ACCESSIBIL': 'Access:       ',
+# 'FORESTNAME': 'Forest:       '
+# }
+
+# fields in KML file exported from QGIS
 fields = {
-'OPENSTATUS': 'Open/closed:  ',
-'OPEN_SEASO': 'From:         ',
-'OPEN_SEA_1': 'To:           ',
-'OPERATIONA': 'Operational:  ',
-'FEEDESCRIP': 'Fees:         ',
-'RESERVATIO': 'Reservations: ',
-'RESTRICTIO': 'Restrictions: ',
-'MARKERACTI': 'Activities:   ',
-'SPOTLIGHTD': 'Spotlighted:  ',
-'ATTRACTION': 'Attraction:   ',
-'ACCESSIBIL': 'Access:       ',
-'FORESTNAME': 'Forest:       '
+#    'RECAREANAME':        'Name:        ',
+    'ACTIVITYNAME':       'Activity:    ',
+    'RECAREADESCRIPTION': 'Description: ',
+    'OPENSTATUS':         'Open/closed: ',
+    'OPEN_SEASON_START' : 'Open from:   ',
 }
 
 # write gpx
@@ -89,8 +97,9 @@ for e in tqdm(placemarks):
             logging.warning(f'placemark {id}: switched lat/lon {lat}, {lon}')
         validate_location(lat, lon, id)
         wpt = gpxpy.gpx.GPXWaypoint(latitude = lat, longitude = lon)
-        wpt.name = find_text_for_field(sdata, 'RECAREANAM')
-        desc = find_plain_text_for_field(sdata, 'RECAREADES')
+        wpt.name = find_text_for_field(sdata, 'RECAREANAME')
+
+        desc = find_plain_text_for_field(sdata, 'RECAREADESCRIPTION')
         desc += '\n'
         for field in fields:
             fdata = find_plain_text_for_field(sdata, field)
